@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  phoneHash     String   @unique
+  handle        String   @unique
+  ageBand       String
+  bio           String?  @db.VarChar(80)
+  createdAt     DateTime @default(now())
+  banState      String   @default("active")
+  messagesSent  Message[] @relation("sent")
+  messagesRecv  Message[] @relation("recv")
+  presences     Presence[]
+}
+
+model Presence {
+  id        String   @id @default(cuid())
+  userId    String
+  areaId    String
+  enteredAt DateTime @default(now())
+  lastPing  DateTime @updatedAt
+  exitedAt  DateTime?
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, areaId])
+}
+
+model Area {
+  id        String @id @default(cuid())
+  name      String
+  centerLat Float
+  centerLon Float
+  radiusM   Int
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  areaId    String
+  fromId    String
+  toId      String
+  text      String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+  expiresAt DateTime
+  from      User     @relation("sent", fields: [fromId], references: [id])
+  to        User     @relation("recv", fields: [toId], references: [id])
+  area      Area     @relation(fields: [areaId], references: [id])
+}
+
+model Report {
+  id            String   @id @default(cuid())
+  reporterId    String
+  targetUserId  String?
+  targetMessageId String?
+  reason        String
+  note          String?
+  createdAt     DateTime @default(now())
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+}
+
+model RankSnapshot {
+  id         String   @id @default(cuid())
+  snapshotAt DateTime
+  userId     String
+  hourScore  Int
+  dayScore   Int
+}
